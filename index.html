@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PickFlow Full Prototype</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-row">
+        <div class="bot-logo">🤖</div>
+        <div>
+          <h1>PickFlow</h1>
+          <p>Robotic Picking System</p>
+        </div>
+      </div>
+      <label>Operator Name</label>
+      <input id="loginName" value="Ibrahim"/>
+      <label>Workstation</label>
+      <select id="loginStation">
+        <option>WS1</option>
+        <option>WS2</option>
+        <option>WS3</option>
+        <option>WS4</option>
+      </select>
+      <button onclick="login()">Enter Workstation</button>
+      <small>Prototype mode: no password required.</small>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="bot-logo small">🤖</div>
+        <div>
+          <h2>PickFlow</h2>
+          <span>Robotic Picking System</span>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav active" data-page="dashboard" onclick="showPage('dashboard')">🏠 Dashboard</button>
+        <button class="nav" data-page="callpod" onclick="showPage('callpod')">📦 Call Pod</button>
+        <button class="nav" data-page="picking" onclick="showPage('picking')">✅ Picking</button>
+        <button class="nav" data-page="map" onclick="showPage('map')">🗺️ Live Map</button>
+        <button class="nav" data-page="robots" onclick="showPage('robots')">🤖 Robots</button>
+        <button class="nav" data-page="inventory" onclick="showPage('inventory')">🏷️ Inventory</button>
+        <button class="nav" data-page="workstations" onclick="showPage('workstations')">🧑‍🏭 Workstations</button>
+        <button class="nav" data-page="requests" onclick="showPage('requests')">📋 Requests</button>
+        <button class="nav" data-page="reports" onclick="showPage('reports')">📊 Reports</button>
+        <button class="nav" data-page="settings" onclick="showPage('settings')">⚙️ Settings</button>
+      </nav>
+
+      <div class="operator">
+        <div class="avatar">IB</div>
+        <div>
+          <strong id="operatorName">Ibrahim</strong>
+          <span id="operatorRole">Shift Supervisor</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Real-time overview of robots, pods, workstations and requests</p>
+        </div>
+        <div class="top-actions">
+          <button class="ghost" onclick="seedUrgentRequest()">+ Urgent Request</button>
+          <button class="ghost" onclick="resetSimulation()">Reset Demo</button>
+          <div class="clock">
+            <strong id="clockTime">--:--</strong>
+            <span id="clockDate">--</span>
+          </div>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active-page">
+        <div class="kpis">
+          <div class="kpi"><div class="icon blue">🤖</div><div><span>Active Robots</span><strong id="kpiRobots">0 / 0</strong><small id="robotUtil">0% in operation</small></div></div>
+          <div class="kpi"><div class="icon green">📦</div><div><span>Pending Requests</span><strong id="kpiRequests">0</strong><small id="urgentCount">0 high priority</small></div></div>
+          <div class="kpi"><div class="icon purple">🚚</div><div><span>Pods In Transit</span><strong id="kpiTransit">0</strong><small>Across workstations</small></div></div>
+          <div class="kpi"><div class="icon orange">✅</div><div><span>Picked Today</span><strong id="kpiPicked">0</strong><small>Prototype counter</small></div></div>
+        </div>
+
+        <div class="grid two">
+          <div class="card large">
+            <div class="card-head"><h3>Warehouse Map</h3><button onclick="showPage('map')">Open Map</button></div>
+            <div id="dashboardMap" class="warehouse-map mini"></div>
+            <div class="legend">
+              <span><i class="dot idle"></i> Idle</span>
+              <span><i class="dot route"></i> En Route</span>
+              <span><i class="dot working"></i> Working</span>
+              <span><i class="dot charging"></i> Charging</span>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card"><div class="card-head"><h3>Robot Status</h3><button onclick="showPage('robots')">View all</button></div><div id="robotList" class="list"></div></div>
+            <div class="card"><div class="card-head"><h3>Activity Feed</h3><button onclick="clearFeed()">Clear</button></div><ul id="activityFeed" class="feed"></ul></div>
+          </div>
+        </div>
+
+        <div class="grid two bottom">
+          <div class="card"><div class="card-head"><h3>Pending Requests</h3><button onclick="showPage('requests')">View all</button></div><div id="requestTable" class="table"></div></div>
+          <div class="card"><div class="card-head"><h3>Workstation Status</h3><button onclick="showPage('workstations')">View all</button></div><div id="stationList" class="station-list"></div></div>
+        </div>
+      </section>
+
+      <section id="callpod" class="page">
+        <div class="workflow-layout">
+          <div class="card call-card">
+            <h3>Scan or Search Item</h3>
+            <p>Use barcode scanner input or search by SKU, item name, pod or bin.</p>
+            <div class="scan-box" onclick="focusSearch()">⌗<span>Scan Barcode</span></div>
+            <div class="search-row">
+              <input id="itemSearch" placeholder="Try ACME-12MM-BOLT, cable, sensor, glove..." oninput="searchInventory()"/>
+              <button onclick="searchInventory()">Search</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+          </div>
+
+          <div class="card call-card">
+            <h3>Selected Item</h3>
+            <div id="selectedItemBox" class="empty-state">No item selected yet.</div>
+          </div>
+
+          <div class="card call-card">
+            <h3>Request Status</h3>
+            <div id="currentRequestBox" class="empty-state">No active request at this workstation.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="picking" class="page">
+        <div class="grid two">
+          <div class="card">
+            <h3>Current Pick</h3>
+            <div id="pickPanel" class="empty-state">No pod is ready to pick.</div>
+          </div>
+          <div class="card">
+            <h3>Release Pod</h3>
+            <div id="releasePanel" class="empty-state">Confirm a pick before releasing the pod.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="map" class="page">
+        <div class="card">
+          <div class="card-head">
+            <h3>Live Warehouse Map</h3>
+            <div>
+              <button onclick="toggleTraffic()">Toggle Traffic</button>
+              <button onclick="simulateTick()">Simulate Step</button>
+            </div>
+          </div>
+          <div id="fullMap" class="warehouse-map full"></div>
+          <div class="legend">
+            <span><i class="dot idle"></i> Idle Robot</span>
+            <span><i class="dot route"></i> En Route</span>
+            <span><i class="dot working"></i> At Workstation</span>
+            <span><i class="dot charging"></i> Charging</span>
+            <span><i class="dot pod"></i> Pod</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="robots" class="page">
+        <div class="card">
+          <div class="card-head"><h3>Fleet Manager</h3><button onclick="chargeLowestRobot()">Send Lowest Battery to Charge</button></div>
+          <div id="robotsGrid" class="robot-grid"></div>
+        </div>
+      </section>
+
+      <section id="inventory" class="page">
+        <div class="card">
+          <div class="card-head">
+            <h3>Inventory</h3>
+            <input id="inventoryFilter" placeholder="Filter inventory..." oninput="renderInventory()"/>
+          </div>
+          <div id="inventoryTable" class="table"></div>
+        </div>
+      </section>
+
+      <section id="workstations" class="page">
+        <div class="card">
+          <h3>Workstations</h3>
+          <div id="workstationGrid" class="station-grid"></div>
+        </div>
+      </section>
+
+      <section id="requests" class="page">
+        <div class="card">
+          <div class="card-head"><h3>Requests Queue</h3><button onclick="seedUrgentRequest()">Add Demo Request</button></div>
+          <div id="requestsFullTable" class="table"></div>
+        </div>
+      </section>
+
+      <section id="reports" class="page">
+        <div class="grid two">
+          <div class="card"><h3>Pick Performance</h3><div class="bars" id="performanceBars"></div></div>
+          <div class="card"><h3>Prototype Notes</h3><p>This browser-only prototype simulates the full workflow. A production version would connect to a backend API, robot fleet manager, WMS/ERP, barcode scanner, authentication, and live WebSocket events.</p></div>
+        </div>
+      </section>
+
+      <section id="settings" class="page">
+        <div class="card settings">
+          <h3>Settings</h3>
+          <label>Default Workstation</label>
+          <select id="defaultStation" onchange="changeStation(this.value)">
+            <option>WS1</option><option>WS2</option><option>WS3</option><option>WS4</option>
+          </select>
+          <label>Auto-assign robots</label>
+          <input type="checkbox" checked onchange="state.autoAssign=this.checked"/>
+          <label>Traffic control mode</label>
+          <select onchange="state.trafficMode=this.value"><option>Balanced</option><option>Fastest Route</option><option>Battery Saver</option></select>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script src="app.js"></script>
+</body>
+</html>
